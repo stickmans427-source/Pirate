@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { AssetCard } from '../components/AssetCard';
 import { CATEGORIES } from '../data';

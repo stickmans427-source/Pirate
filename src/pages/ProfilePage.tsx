@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Save, User as UserIcon, Shield, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

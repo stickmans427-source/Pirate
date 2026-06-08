@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Asset, Notification } from '../types';
 import { CURRENT_USER, MOCK_ASSETS, MOCK_NOTIFICATIONS, INITIAL_USERS } from '../data';
 
@@ -23,10 +23,50 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(CURRENT_USER);
-  const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('pirate_users');
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+
+  const [user, setUser] = useState<User | null>(() => {
+    const userEmail = localStorage.getItem('pirate_current_user_email');
+    if (userEmail) {
+      const saved = localStorage.getItem('pirate_users');
+      const allUsers = saved ? JSON.parse(saved) : INITIAL_USERS;
+      return allUsers.find((u: User) => u.email === userEmail) || null;
+    }
+    return CURRENT_USER;
+  });
+
+  const [assets, setAssets] = useState<Asset[]>(() => {
+    const saved = localStorage.getItem('pirate_assets');
+    return saved ? JSON.parse(saved) : MOCK_ASSETS;
+  });
+
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    const saved = localStorage.getItem('pirate_notifications');
+    return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pirate_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('pirate_current_user_email', user.email);
+    } else {
+      localStorage.removeItem('pirate_current_user_email');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem('pirate_assets', JSON.stringify(assets));
+  }, [assets]);
+
+  useEffect(() => {
+    localStorage.setItem('pirate_notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
   const login = (email: string) => {
     // In a real app we'd fetch this from DB

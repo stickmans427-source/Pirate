@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Asset } from '../types';
 import { Star, Download, Heart } from 'lucide-react';
@@ -7,7 +8,7 @@ interface AssetCardProps {
   asset: Asset;
 }
 
-export function AssetCard({ asset }: AssetCardProps) {
+export const AssetCard: React.FC<AssetCardProps> = ({ asset }) => {
   return (
     <Link to={`/asset/${asset.id}`} className="group flex flex-col bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all hover:shadow-lg hover:shadow-indigo-500/10">
       <div className="relative aspect-video bg-neutral-900 overflow-hidden">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { CATEGORIES, CURRENT_USER } from '../data';
 import { Upload, FileText, Image, DollarSign, Tag, CheckCircle } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';

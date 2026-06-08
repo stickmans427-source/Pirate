@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Check, X, Shield, Coins, UserCheck } from 'lucide-react';
 import { Asset, User } from '../types';
