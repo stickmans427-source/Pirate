@@ -144,26 +144,7 @@ export function Dashboard() {
          </div>
       </div>
 
-      {/* Premium Status */}
-      <div className={`border rounded-xl p-6 ${user.isPremium ? 'bg-indigo-900/20 border-indigo-500/30' : 'bg-neutral-800 border-neutral-700'}`}>
-         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  Pirate Premium {user.isPremium && <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-widest font-bold">Active</span>}
-               </h3>
-               <p className="text-sm text-neutral-400 mt-1">
-                  {user.isPremium 
-                     ? 'You are currently enjoying extended upload limits and priority support.' 
-                     : 'Upgrade to Premium for 1,000 Tokens/mo to extend your daily upload limits and more.'}
-               </p>
-            </div>
-            {!user.isPremium && (
-               <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-500/20">
-                  Upgrade (1,000 T)
-               </button>
-            )}
-         </div>
-      </div>
+
 
     </div>
   );
