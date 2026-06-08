@@ -1,0 +1,8 @@
+{
+  "name": "Pirate - Roblox Asset Marketplace",
+  "description": "A marketplace platform for publishing, selling, and buying files for Roblox Studio using Tokens.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
