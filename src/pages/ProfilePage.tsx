@@ -4,7 +4,7 @@ import { Save, User as UserIcon, Shield, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function ProfilePage() {
-  const { user, updateProfile } = useAppContext();
+  const { user, updateProfile, togglePremium } = useAppContext();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -59,16 +59,33 @@ export function ProfilePage() {
                     <Shield className="w-3.5 h-3.5" /> Owner
                   </span>
                 )}
+                {user.isPremium && (
+                  <span className="bg-amber-500/10 text-amber-500 text-xs px-2 py-1 rounded flex items-center gap-1 uppercase tracking-wider font-bold">
+                    Premium
+                  </span>
+                )}
               </h1>
               <p className="text-neutral-400 mt-1">Joined {new Date(user.joinDate).toLocaleDateString()}</p>
             </div>
             {!isEditing && (
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <Edit2 className="w-4 h-4" /> Edit Profile
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={togglePremium}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    user.isPremium 
+                      ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20' 
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                >
+                  {user.isPremium ? 'Cancel Premium' : 'Activate Premium (500 Tokens / month)'}
+                </button>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" /> Edit Profile
+                </button>
+              </div>
             )}
           </div>
 

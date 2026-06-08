@@ -11,6 +11,7 @@ interface AppContextType {
   signup: (username: string, email: string) => void;
   logout: () => void;
   updateProfile: (bio: string, avatarUrl: string) => void;
+  togglePremium: () => void;
   claimDailyReward: () => void;
   purchaseAsset: (assetId: string) => boolean;
   addAsset: (asset: Asset) => void;
@@ -134,6 +135,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
      setUsers(users.map(u => u.id === user.id ? updatedUser : u));
   };
 
+  const togglePremium = () => {
+      if (!user) return;
+      const confirmMsg = user.isPremium ? 'Are you sure you want to cancel your Premium subscription?' : 'Would you like to activate Premium for 500 tokens?';
+      if (!window.confirm(confirmMsg)) return;
+
+      if (!user.isPremium && user.tokens < 500) {
+          alert('Not enough tokens to activate Premium.');
+          return;
+      }
+
+      const updatedUser = { 
+          ...user, 
+          isPremium: !user.isPremium,
+          tokens: user.isPremium ? user.tokens : user.tokens - 500 
+      };
+      
+      setUser(updatedUser);
+      setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+      if (!user.isPremium) {
+          alert('Premium activated!');
+      } else {
+          alert('Premium canceled.');
+      }
+  };
+
   const purchaseAsset = (assetId: string) => {
     if (!user) return false;
     const asset = assets.find(a => a.id === assetId);
@@ -170,7 +196,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       user, assets, users, notifications,
-      login, signup, logout, updateProfile, claimDailyReward, purchaseAsset, addAsset,
+      login, signup, logout, updateProfile, togglePremium, claimDailyReward, purchaseAsset, addAsset,
       updateAssetStatus, markNotificationRead, giveTokens, verifyUser
     }}>
       {children}

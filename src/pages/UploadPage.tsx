@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Asset } from '../types';
 
 export function UploadPage() {
-  const { addAsset, user } = useAppContext();
+  const { addAsset, user, assets } = useAppContext();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -19,9 +19,26 @@ export function UploadPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const currentUploadsToday = assets?.filter(a => {
+    if (a.creatorId !== user?.id) return false;
+    const uploadDate = new Date(a.uploadDate);
+    const today = new Date();
+    return uploadDate.getDate() === today.getDate() &&
+           uploadDate.getMonth() === today.getMonth() &&
+           uploadDate.getFullYear() === today.getFullYear();
+  }).length || 0;
+
+  const uploadLimit = user?.isPremium ? 50 : 15;
+  const canUpload = currentUploadsToday < uploadLimit;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!canUpload) {
+      alert(`You have reached your daily upload limit of ${uploadLimit} assets.`);
+      return;
+    }
+    
     setIsSubmitting(true);
     
     // Simulate upload delay
@@ -57,9 +74,22 @@ export function UploadPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-         <h1 className="text-3xl font-bold text-white">Publish New Asset</h1>
-         <p className="text-neutral-400 mt-2">Share your creations with the Pirate community and earn Tokens.</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+         <div>
+           <h1 className="text-3xl font-bold text-white">Publish New Asset</h1>
+           <p className="text-neutral-400 mt-2">Share your creations with the Pirate community and earn Tokens.</p>
+         </div>
+         <div className="bg-neutral-800 border border-neutral-700 px-4 py-2 rounded-lg text-sm">
+            <span className="text-neutral-400">Daily Uploads: </span>
+            <span className={`font-bold ${currentUploadsToday >= uploadLimit ? 'text-red-400' : 'text-white'}`}>
+              {currentUploadsToday} / {uploadLimit}
+            </span>
+            {!user.isPremium && (
+              <div className="text-xs text-amber-500 mt-1 cursor-pointer hover:underline" onClick={() => navigate('/profile')}>
+                Upgrade to Premium for 50 daily uploads
+              </div>
+            )}
+         </div>
       </div>
 
       <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 sm:p-8">
