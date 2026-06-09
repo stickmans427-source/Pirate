@@ -18,6 +18,7 @@ export function UploadPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const currentUploadsToday = assets?.filter(a => {
     if (a.creatorId !== user?.id) return false;
@@ -105,7 +106,7 @@ export function UploadPage() {
                     maxLength={60}
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="e.g. Neon City Sci-Fi Pack"
+                    placeholder="Name your asset"
                     className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
                   />
                </div>
@@ -167,12 +168,23 @@ export function UploadPage() {
                <h3 className="text-lg font-medium text-white mb-4">Files & Previews</h3>
                
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Placeholder for actual file upload */}
-                  <div className="border-2 border-dashed border-neutral-600 rounded-xl p-8 text-center hover:bg-neutral-700/20 transition-colors cursor-pointer group">
+                  {/* Actual file upload */}
+                  <label className="border-2 border-dashed border-neutral-600 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-neutral-700/20 transition-colors cursor-pointer group relative">
+                     <input
+                        type="file"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        accept=".fbx,.gltf,.obj,.png,.jpg,.jpeg,.tga,.bmp,.gif,.mp3,.ogg,.wav,.flac,.rbxm,.rbxmx,.rbxl,.rbxlx,.mp4,.mov"
+                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                        required
+                     />
                      <FileText className="w-10 h-10 text-neutral-500 mx-auto mb-3 group-hover:text-indigo-400 transition-colors" />
-                     <p className="text-sm text-neutral-300 font-medium">Upload Asset Zip</p>
-                     <p className="text-xs text-neutral-500 mt-1">Accepts .zip containing .rbxm, .obj, etc.</p>
-                  </div>
+                     <p className="text-sm text-neutral-300 font-medium">
+                        {selectedFile ? selectedFile.name : 'Choose File'}
+                     </p>
+                     <p className="text-xs text-neutral-500 mt-1 px-4">
+                        Accepts .fbx, .gltf, .obj, .png, .jpg, .jpeg, .tga, .bmp, .gif, .mp3, .ogg, .wav, .flac, .rbxm, .rbxmx, .rbxl, .rbxlx, .mp4, .mov
+                     </p>
+                  </label>
                   
                   {/* Placeholder for Thumbnail upload (using URL input for simplicity in MVP) */}
                   <div className="space-y-4">
