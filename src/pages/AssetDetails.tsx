@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export function AssetDetails() {
   const { id } = useParams<{ id: string }>();
-  const { assets, purchaseAsset, user } = useAppContext();
+  const { assets, purchaseAsset, user, toggleFavorite } = useAppContext();
   const asset = assets.find(a => a.id === id);
   const [activePreview, setActivePreview] = useState(0);
 
@@ -14,11 +14,33 @@ export function AssetDetails() {
     return <div className="text-center text-white py-20">Asset not found</div>;
   }
 
-  const handlePurchase = () => {
-    if (purchaseAsset(asset.id)) {
-      alert(`Successfully purchased ${asset.name}! Tokens deducted.`);
+  const isPurchased = user?.purchasedAssets?.includes(asset.id);
+  const isFavorited = user?.favoritedAssets?.includes(asset.id);
+
+  const handleAction = () => {
+    if (!user) {
+      alert("Please log in to purchase or download.");
+      return;
+    }
+
+    if (isPurchased) {
+      const blob = new Blob([`Dummy content for ${asset.name}`], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = asset.fileTypes && asset.fileTypes.length > 0 ? asset.fileTypes[0] : '.zip';
+      const cleanName = asset.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      a.download = `${cleanName}${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } else {
-      alert('Failed to purchase. Insufficient Tokens or not logged in.');
+      if (purchaseAsset(asset.id)) {
+        alert(`Successfully purchased ${asset.name}! Tokens deducted.`);
+      } else {
+        alert('Failed to purchase. Insufficient Tokens.');
+      }
     }
   };
 
@@ -110,19 +132,33 @@ export function AssetDetails() {
              <div className="text-indigo-400 font-medium mb-6">By {asset.creatorName}</div>
              
              <div className="flex items-center gap-2 text-3xl font-bold text-white mb-6 bg-neutral-900 p-4 rounded-lg border border-neutral-700">
-               <span className="text-amber-400">â</span> {formatTokens(asset.price)}
+               {isPurchased ? (
+                 <span className="text-indigo-400 text-lg">Purchased ✓</span>
+               ) : (
+                 <>
+                   <span className="text-amber-400">â</span> {formatTokens(asset.price)}
+                 </>
+               )}
              </div>
 
              <button 
-               onClick={handlePurchase}
-               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-bold text-lg mb-3 flex justify-center items-center gap-2 transition-colors"
+               onClick={handleAction}
+               className={`w-full ${isPurchased ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white py-3 px-4 rounded-lg font-bold text-lg mb-3 flex justify-center items-center gap-2 transition-colors`}
              >
                <Download className="w-5 h-5" />
-               Purchase & Download
+               {isPurchased ? 'Download File' : 'Purchase & Download'}
              </button>
              
-             <button className="w-full bg-neutral-700 hover:bg-neutral-600 text-white py-3 px-4 rounded-lg font-medium text-sm mb-6 flex justify-center items-center gap-2 transition-colors">
-               <Heart className="w-4 h-4" /> Add to Favorites
+             <button 
+               onClick={() => toggleFavorite(asset.id)}
+               className={`w-full py-3 px-4 rounded-lg font-medium text-sm mb-6 flex justify-center items-center gap-2 transition-colors ${
+                 isFavorited 
+                   ? 'bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 border border-rose-500/50' 
+                   : 'bg-neutral-700 hover:bg-neutral-600 text-white border border-transparent'
+               }`}
+             >
+               <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} /> 
+               {isFavorited ? 'Favorited' : 'Add to Favorites'}
              </button>
              
              <div className="space-y-3 pt-6 border-t border-neutral-700 text-sm">

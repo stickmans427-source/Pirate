@@ -17,6 +17,7 @@ interface AppContextType {
   addAsset: (asset: Asset) => void;
   updateAssetStatus: (assetId: string, status: 'approved' | 'rejected') => void;
   markNotificationRead: (id: string) => void;
+  toggleFavorite: (assetId: string) => void;
   giveTokens: (userId: string, amount: number) => void;
   verifyUser: (userId: string) => void;
 }
@@ -163,12 +164,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const purchaseAsset = (assetId: string) => {
     if (!user) return false;
     const asset = assets.find(a => a.id === assetId);
-    if (!asset || user.tokens < asset.price) return false;
+    if (!asset) return false;
+    if (user.purchasedAssets?.includes(assetId)) return true;
+    if (user.tokens < asset.price) return false;
 
-    const updatedUser = { ...user, tokens: user.tokens - asset.price };
+    const updatedUser = { 
+        ...user, 
+        tokens: user.tokens - asset.price,
+        purchasedAssets: [...(user.purchasedAssets || []), assetId]
+    };
     setUser(updatedUser);
     setUsers(users.map(u => u.id === user.id ? updatedUser : u));
     return true;
+  };
+
+  const toggleFavorite = (assetId: string) => {
+    if (!user) return;
+    const isFavorited = user.favoritedAssets?.includes(assetId);
+    const updatedUser = {
+      ...user,
+      favoritedAssets: isFavorited
+        ? user.favoritedAssets?.filter(id => id !== assetId)
+        : [...(user.favoritedAssets || []), assetId]
+    };
+    setUser(updatedUser);
+    setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+
+    setAssets(assets.map(a => a.id === assetId ? {
+      ...a,
+      favoritesCount: isFavorited ? Math.max(0, a.favoritesCount - 1) : a.favoritesCount + 1
+    } : a));
   };
 
   const addAsset = (asset: Asset) => {
@@ -197,7 +222,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       user, assets, users, notifications,
       login, signup, logout, updateProfile, togglePremium, claimDailyReward, purchaseAsset, addAsset,
-      updateAssetStatus, markNotificationRead, giveTokens, verifyUser
+      updateAssetStatus, markNotificationRead, giveTokens, verifyUser, toggleFavorite
     }}>
       {children}
     </AppContext.Provider>

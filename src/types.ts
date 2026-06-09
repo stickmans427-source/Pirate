@@ -30,6 +30,8 @@ export interface User {
   isVerified: boolean;
   bio?: string;
   lastDailyReward?: string;
+  purchasedAssets?: string[];
+  favoritedAssets?: string[];
 }
 
 export interface Review {
