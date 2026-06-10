@@ -102,36 +102,15 @@ export function AssetDetails() {
           </div>
 
           <div>
-             <h2 className="text-2xl font-bold text-white mb-4">Reviews & Ratings</h2>
+             <h2 className="text-2xl font-bold text-white mb-4">Favorites</h2>
              <div className="flex items-center gap-4 mb-6">
-                <div className="text-5xl font-bold text-white">{asset.rating.toFixed(1)}</div>
-                <div className="space-y-1">
-                   <div className="flex text-amber-500">
-                     {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
-                   </div>
-                   <div className="text-sm text-neutral-400">Based on {asset.reviews.length || 1} review(s)</div>
+                <div className="flex items-center justify-center bg-rose-500/20 text-rose-500 w-16 h-16 rounded-2xl border border-rose-500/30">
+                  <Heart className="w-8 h-8 fill-current" />
                 </div>
-             </div>
-             
-             <div className="space-y-4">
-               {asset.reviews.map(review => (
-                 <div key={review.id} className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
-                    <div className="flex items-center gap-3 mb-3">
-                       <img src={review.userAvatar} className="w-10 h-10 rounded-full bg-neutral-700" />
-                       <div>
-                         <div className="font-medium text-white">{review.userName}</div>
-                         <div className="flex items-center gap-2">
-                           <div className="flex text-amber-500">
-                             {[...Array(5)].map((_, i) => <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-current' : 'text-neutral-600'}`} />)}
-                           </div>
-                           <span className="text-xs text-neutral-500">{new Date(review.date).toLocaleDateString()}</span>
-                         </div>
-                       </div>
-                    </div>
-                    <p className="text-neutral-300 text-sm">{review.content}</p>
-                 </div>
-               ))}
-               {asset.reviews.length === 0 && <p className="text-neutral-500">No reviews yet.</p>}
+                <div className="space-y-1">
+                   <div className="text-5xl font-bold text-white">{asset.favoritesCount}</div>
+                   <div className="text-sm text-neutral-400">People favorited this asset</div>
+                </div>
              </div>
           </div>
         </div>

@@ -18,7 +18,7 @@ export function Home() {
     .sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
       if (sortBy === 'popular') return b.downloadsCount - a.downloadsCount;
-      if (sortBy === 'rating') return b.rating - a.rating;
+      if (sortBy === 'favorites') return b.favoritesCount - a.favoritesCount;
       if (sortBy === 'priceAsc') return a.price - b.price;
       if (sortBy === 'priceDesc') return b.price - a.price;
       return 0;
@@ -95,7 +95,7 @@ export function Home() {
              >
                <option value="newest">Newest First</option>
                <option value="popular">Most Popular</option>
-               <option value="rating">Highest Rating</option>
+               <option value="favorites">Most Favorited</option>
                <option value="priceAsc">Price: Low to High</option>
                <option value="priceDesc">Price: High to Low</option>
              </select>

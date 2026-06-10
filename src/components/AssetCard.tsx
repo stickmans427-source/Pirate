@@ -33,8 +33,8 @@ export const AssetCard: React.FC<AssetCardProps> = ({ asset }) => {
         <div className="mt-4 flex items-center justify-between text-xs text-neutral-500 mt-auto">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span className="font-medium text-neutral-300">{asset.rating.toFixed(1)}</span>
+              <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+              <span className="font-medium text-neutral-300">{asset.favoritesCount}</span>
             </div>
             <div className="flex items-center gap-1 tooltip" title="Downloads">
               <Download className="w-3.5 h-3.5" />
