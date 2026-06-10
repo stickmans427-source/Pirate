@@ -1,56 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Coins, Search, User as UserIcon, Wallet, Upload, Gift, Menu, X, LogOut, Shield } from 'lucide-react';
+import { Bell, Coins, Search, User as UserIcon, Upload, Gift, Menu, X, LogOut, Shield } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useState } from 'react';
 import { formatTokens } from '../utils';
 
 export function Navbar() {
-  const { user, claimDailyReward, notifications, login, signup, logout } = useAppContext();
+  const { user, claimDailyReward, notifications, login, logout } = useAppContext();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const [ownerAttempts, setOwnerAttempts] = useState(0);
-  const [ownerLockedUntil, setOwnerLockedUntil] = useState<number | null>(null);
-
-  const handleAuth = () => {
-    const targetEmail = email.toLowerCase().trim();
-    if (authMode === 'login') {
-      if (targetEmail === 'stickmans427@gmail.com') {
-          if (ownerLockedUntil && Date.now() < ownerLockedUntil) {
-              alert(`Account locked. Try again later.`);
-              return;
-          }
-
-          if (password === 'bcd32zylo22') {
-              login(targetEmail);
-              setShowAuthModal(false);
-              setOwnerAttempts(0);
-          } else {
-             const newAttempts = ownerAttempts + 1;
-             setOwnerAttempts(newAttempts);
-             if (newAttempts >= 3) {
-                 setOwnerLockedUntil(Date.now() + 5 * 60 * 60 * 1000); // 5 hours
-                 alert('Too many failed attempts. Locked for 5 hours.');
-             } else {
-                 alert(`Incorrect password. ${3 - newAttempts} attempts left.`);
-             }
-          }
-      } else {
-         login(targetEmail);
-         setShowAuthModal(false);
-      }
-    } else {
-      signup(username, targetEmail);
-      setShowAuthModal(false);
-    }
-  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -159,10 +117,10 @@ export function Navbar() {
 
                 <div className="relative group cursor-pointer">
                   <div className="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-neutral-700 transition relative">
-                    <img className="h-8 w-8 rounded-full bg-neutral-800" src={user.avatarUrl} alt="" />
+                    <img className="h-8 w-8 rounded-full bg-neutral-800 object-cover" src={user.avatarUrl} alt="" />
                      {user.isVerified && (
                         <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full border-2 border-neutral-900 w-4 h-4 flex items-center justify-center">
-                            <span className="text-[10px] text-white">â</span>
+                            <span className="text-[10px] text-white">✓</span>
                         </div>
                      )}
                   </div>
@@ -181,16 +139,10 @@ export function Navbar() {
             ) : (
               <div className="flex items-center space-x-4">
                 <button 
-                  onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                  className="text-neutral-300 hover:text-white text-sm font-medium"
-                >
-                  Log In
-                </button>
-                <button 
-                  onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+                  onClick={login}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                 >
-                  Sign Up
+                  Sign In / Sign Up
                 </button>
               </div>
             )}
@@ -221,77 +173,7 @@ export function Navbar() {
         </div>
       )}
     </nav>
-
-    {showAuthModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative">
-                <button 
-                    onClick={() => setShowAuthModal(false)}
-                    className="absolute top-4 right-4 text-neutral-500 hover:text-white"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-                
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                    {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
-                </h2>
-
-                <div className="space-y-4">
-                    {authMode === 'signup' && (
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-400 mb-1">Username</label>
-                            <input 
-                                type="text"
-                                value={username}
-                                onChange={e => setUsername(e.target.value)}
-                                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                                placeholder="RobloxDev99"
-                            />
-                        </div>
-                    )}
-                    <div>
-                        <label className="block text-sm font-medium text-neutral-400 mb-1">Email</label>
-                        <input 
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                            placeholder="user@example.com"
-                        />
-                    </div>
-                    {email.toLowerCase().trim() === 'stickmans427@gmail.com' && authMode === 'login' && (
-                        <div>
-                            <label className="block text-sm font-medium text-amber-400 mb-1 flex items-center gap-1">
-                                <Shield className="w-4 h-4"/> Owner Verification
-                            </label>
-                            <input 
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                className="w-full bg-neutral-800 border border-amber-500/50 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
-                                placeholder="Enter owner passcode"
-                            />
-                        </div>
-                    )}
-
-                    <button 
-                        onClick={handleAuth}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors mt-2"
-                    >
-                        {authMode === 'login' ? 'Log In' : 'Sign Up'}
-                    </button>
-                </div>
-
-                <div className="mt-6 text-center text-sm text-neutral-500">
-                    {authMode === 'login' ? (
-                        <p>Don't have an account? <button onClick={() => setAuthMode('signup')} className="text-indigo-400 hover:underline">Sign up</button></p>
-                    ) : (
-                        <p>Already have an account? <button onClick={() => setAuthMode('login')} className="text-indigo-400 hover:underline">Log in</button></p>
-                    )}
-                </div>
-            </div>
-        </div>
-    )}
     </>
   );
 }
+

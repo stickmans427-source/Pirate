@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the platform",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "tokens": { "type": "number" },
+        "isPremium": { "type": "boolean" },
+        "joinDate": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "user"] },
+        "isVerified": { "type": "boolean" },
+        "bio": { "type": "string" },
+        "lastDailyReward": { "type": "string" },
+        "purchasedAssets": { "type": "array" },
+        "favoritedAssets": { "type": "array" }
+      },
+      "required": ["username", "email", "role"]
+    },
+    "asset": {
+      "title": "Asset",
+      "description": "An asset uploaded by a user",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "uploadDate": { "type": "string" },
+        "lastUpdatedDate": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array" },
+        "price": { "type": "number" },
+        "downloadsCount": { "type": "number" },
+        "favoritesCount": { "type": "number" },
+        "rating": { "type": "number" },
+        "fileTypes": { "type": "array" },
+        "previewImages": { "type": "array" },
+        "reviews": { "type": "array" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "fileData": { "type": "string" },
+        "fileName": { "type": "string" }
+      },
+      "required": ["name", "creatorId", "uploadDate", "price"]
+    },
+    "notification": {
+      "title": "Notification",
+      "description": "A notification for a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "date": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["userId", "message", "date", "read"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "Application users."
+    },
+    "assets/{assetId}": {
+      "schema": "asset",
+      "description": "Assets uploaded for sale or sharing."
+    },
+    "notifications/{notificationId}": {
+      "schema": "notification",
+      "description": "User notifications."
+    }
+  }
+}

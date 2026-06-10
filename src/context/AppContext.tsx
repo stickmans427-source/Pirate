@@ -1,125 +1,131 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Asset, Notification } from '../types';
-import { CURRENT_USER, MOCK_ASSETS, MOCK_NOTIFICATIONS, INITIAL_USERS } from '../data';
+import { MOCK_ASSETS, MOCK_NOTIFICATIONS, INITIAL_USERS } from '../data';
+import { auth, db, signInWithGoogle as firebaseSignIn } from '../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, getDocs } from 'firebase/firestore';
 
 interface AppContextType {
   user: User | null;
   assets: Asset[];
   users: User[];
   notifications: Notification[];
-  login: (email: string) => void;
-  signup: (username: string, email: string) => void;
-  logout: () => void;
-  updateProfile: (bio: string, avatarUrl: string) => void;
-  togglePremium: () => void;
-  claimDailyReward: () => void;
-  purchaseAsset: (assetId: string) => boolean;
-  addAsset: (asset: Asset) => void;
-  updateAssetStatus: (assetId: string, status: 'approved' | 'rejected') => void;
-  deleteAsset: (assetId: string) => void;
-  updateAsset: (assetId: string, updates: Partial<Asset>) => void;
+  login: () => Promise<void>;
+  signup: () => Promise<void>; // Aliased to login for Google auth
+  logout: () => Promise<void>;
+  updateProfile: (bio: string, avatarUrl: string) => Promise<void>;
+  togglePremium: () => Promise<void>;
+  claimDailyReward: () => Promise<void>;
+  purchaseAsset: (assetId: string) => Promise<boolean>;
+  addAsset: (asset: Asset) => Promise<void>;
+  updateAssetStatus: (assetId: string, status: 'approved' | 'rejected') => Promise<void>;
+  deleteAsset: (assetId: string) => Promise<void>;
+  updateAsset: (assetId: string, updates: Partial<Asset>) => Promise<void>;
   markNotificationRead: (id: string) => void;
-  toggleFavorite: (assetId: string) => void;
-  giveTokens: (userId: string, amount: number) => void;
-  verifyUser: (userId: string) => void;
+  toggleFavorite: (assetId: string) => Promise<void>;
+  giveTokens: (userId: string, amount: number) => Promise<void>;
+  verifyUser: (userId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('pirate_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
-  });
-
-  const [user, setUser] = useState<User | null>(() => {
-    const userEmail = localStorage.getItem('pirate_current_user_email');
-    if (userEmail) {
-      const saved = localStorage.getItem('pirate_users');
-      const allUsers = saved ? JSON.parse(saved) : INITIAL_USERS;
-      return allUsers.find((u: User) => u.email === userEmail) || null;
-    }
-    return CURRENT_USER;
-  });
-
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [user, setUser] = useState<User | null>(null);
   const [assets, setAssets] = useState<Asset[]>(() => {
-    const saved = localStorage.getItem('pirate_assets');
+    // Initial load from localStorage as fallback before Firebase loads
+    const saved = localStorage.getItem('pirate_assets_local');
     return saved ? JSON.parse(saved) : MOCK_ASSETS;
   });
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
 
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    const saved = localStorage.getItem('pirate_notifications');
-    return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
-  });
-
+  // Firestore Auth & User Sync
   useEffect(() => {
-    localStorage.setItem('pirate_users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('pirate_current_user_email', user.email);
-    } else {
-      localStorage.removeItem('pirate_current_user_email');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('pirate_assets', JSON.stringify(assets));
-    } catch (e) {
-      console.error("Failed to save assets to local storage. File might be too large.", e);
-      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        alert("Warning: The uploaded file is too large for local browser storage. The app will keep it in memory, but it may be lost on reload.");
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          setUser(userSnap.data() as User);
+        } else {
+          // Create new user profile
+          const newUser: User = {
+            id: firebaseUser.uid,
+            username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown User',
+            email: firebaseUser.email || '',
+            avatarUrl: firebaseUser.photoURL || `https://i.pinimg.com/originals/19/76/9c/19769cc33d2d3a29620cb15caa918feb.jpg?nii=t`,
+            tokens: 100, // starting balance
+            isPremium: false,
+            joinDate: new Date().toISOString(),
+            role: firebaseUser.email?.toLowerCase() === 'stickmans427@gmail.com' ? 'owner' : 'user',
+            isVerified: false,
+            bio: 'A new user exploring Pirate.'
+          };
+          await setDoc(userRef, newUser);
+          setUser(newUser);
+        }
+      } else {
+        setUser(null);
       }
-    }
-  }, [assets]);
+    });
 
+    return () => unsubscribe();
+  }, []);
+
+  // Sync users collection for admin panel
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+       const fetchedUsers = snapshot.docs.map(doc => doc.data() as User);
+       setUsers(fetchedUsers.length > 0 ? fetchedUsers : INITIAL_USERS);
+    }, (error) => {
+       console.log("Error loading users, perhaps due to permissions:", error);
+    });
+    return () => unsub();
+  }, []);
+
+  // Sync assets globally
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, 'assets')), (snapshot) => {
+      const fetchedAssets = snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Asset));
+      if (fetchedAssets.length > 0) {
+        setAssets(fetchedAssets);
+        localStorage.setItem('pirate_assets_local', JSON.stringify(fetchedAssets));
+      } else if (assets.length > 0 && assets[0].id === MOCK_ASSETS[0].id) {
+        // If DB is empty and we have mock assets, let's keep mock assets in state
+        // but avoid overwriting them back to DB right now to save quota
+        setAssets(MOCK_ASSETS);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // We are keeping notifications locally for this prototype because it's complex to migrate fully
+  useEffect(() => {
+    const saved = localStorage.getItem('pirate_notifications');
+    if (saved) setNotifications(JSON.parse(saved));
+  }, []);
   useEffect(() => {
     localStorage.setItem('pirate_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  const login = (email: string) => {
-    // In a real app we'd fetch this from DB
-    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-        setUser(existing);
-    } else {
-        alert("Account not found. Please sign up.");
+
+  const login = async () => {
+    try {
+      await firebaseSignIn();
+    } catch (error) {
+      console.error("Login failed", error);
+      alert("Login failed.");
     }
   };
 
-  const signup = (username: string, email: string) => {
-    if (email.toLowerCase() === 'stickmans427@gmail.com') {
-        alert("This email is reserved for the owner.");
-        return;
-    }
-    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-        alert("Account with this email already exists.");
-        return;
-    }
-    const newUser: User = {
-      id: `u${Date.now()}`,
-      username,
-      email,
-      avatarUrl: `https://i.pinimg.com/originals/19/76/9c/19769cc33d2d3a29620cb15caa918feb.jpg?nii=t`,
-      tokens: 100, // starting balance
-      isPremium: false,
-      joinDate: new Date().toISOString(),
-      role: 'user',
-      isVerified: false,
-      bio: 'A new user exploring Pirate.'
-    };
-    setUsers([...users, newUser]);
-    setUser(newUser);
+  const signup = login;
+
+  const logout = async () => {
+    await signOut(auth);
   };
 
-  const logout = () => {
-    setUser(null);
-  };
-
-  const claimDailyReward = () => {
+  const claimDailyReward = async () => {
     if (!user) return;
     
     const now = new Date();
@@ -131,21 +137,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
        return;
     }
 
-    const reward = Math.floor(Math.random() * (25 - 5 + 1)) + 5; // 5-25 tokens
+    const reward = Math.floor(Math.random() * (25 - 5 + 1)) + 5;
     const updatedUser = { ...user, tokens: user.tokens + Math.floor(reward), lastDailyReward: now.toISOString() };
+    
     setUser(updatedUser);
-    setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+    await updateDoc(doc(db, 'users', user.id), {
+        tokens: updatedUser.tokens,
+        lastDailyReward: updatedUser.lastDailyReward
+    });
     alert(`You claimed your daily reward of ${Math.floor(reward)} Tokens!`);
   };
 
-  const updateProfile = (bio: string, avatarUrl: string) => {
+  const updateProfile = async (bio: string, avatarUrl: string) => {
      if (!user) return;
      const updatedUser = { ...user, bio, avatarUrl };
      setUser(updatedUser);
-     setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+     await updateDoc(doc(db, 'users', user.id), { bio, avatarUrl });
   };
 
-  const togglePremium = () => {
+  const togglePremium = async () => {
       if (!user) return;
       const confirmMsg = user.isPremium ? 'Are you sure you want to cancel your Premium subscription?' : 'Would you like to activate Premium for 500 tokens?';
       if (!window.confirm(confirmMsg)) return;
@@ -162,7 +172,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
       
       setUser(updatedUser);
-      setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+      await updateDoc(doc(db, 'users', user.id), {
+          isPremium: updatedUser.isPremium,
+          tokens: updatedUser.tokens
+      });
+      
       if (!user.isPremium) {
           alert('Premium activated!');
       } else {
@@ -170,69 +184,95 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
   };
 
-  const purchaseAsset = (assetId: string) => {
+  const purchaseAsset = async (assetId: string) => {
     if (!user) return false;
     const asset = assets.find(a => a.id === assetId);
     if (!asset) return false;
     if (user.purchasedAssets?.includes(assetId)) return true;
     if (user.tokens < asset.price) return false;
 
+    const newPurchased = [...(user.purchasedAssets || []), assetId];
     const updatedUser = { 
         ...user, 
         tokens: user.tokens - asset.price,
-        purchasedAssets: [...(user.purchasedAssets || []), assetId]
+        purchasedAssets: newPurchased
     };
     setUser(updatedUser);
-    setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+    
+    await updateDoc(doc(db, 'users', user.id), {
+        tokens: updatedUser.tokens,
+        purchasedAssets: newPurchased
+    });
+
+    // Also increase asset download count
+    await updateDoc(doc(db, 'assets', assetId), {
+        downloadsCount: asset.downloadsCount + 1
+    });
+
     return true;
   };
 
-  const toggleFavorite = (assetId: string) => {
+  const toggleFavorite = async (assetId: string) => {
     if (!user) return;
     const isFavorited = user.favoritedAssets?.includes(assetId);
-    const updatedUser = {
-      ...user,
-      favoritedAssets: isFavorited
-        ? user.favoritedAssets?.filter(id => id !== assetId)
-        : [...(user.favoritedAssets || []), assetId]
-    };
+    const asset = assets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    const updatedFavorited = isFavorited
+        ? user.favoritedAssets?.filter(id => id !== assetId) || []
+        : [...(user.favoritedAssets || []), assetId];
+
+    const updatedUser = { ...user, favoritedAssets: updatedFavorited };
     setUser(updatedUser);
-    setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+    
+    await updateDoc(doc(db, 'users', user.id), {
+        favoritedAssets: updatedFavorited
+    });
 
-    setAssets(assets.map(a => a.id === assetId ? {
-      ...a,
-      favoritesCount: isFavorited ? Math.max(0, a.favoritesCount - 1) : a.favoritesCount + 1
-    } : a));
+    await updateDoc(doc(db, 'assets', assetId), {
+        favoritesCount: isFavorited ? Math.max(0, asset.favoritesCount - 1) : asset.favoritesCount + 1
+    });
   };
 
-  const addAsset = (asset: Asset) => {
-    setAssets([asset, ...assets]);
+  const addAsset = async (asset: Asset) => {
+    // Generate a clean doc id or let firebase auto-generate? We'll provide it
+    const newId = `a${Date.now()}`;
+    const newAsset = { ...asset, id: newId };
+    try {
+        await setDoc(doc(db, 'assets', newId), newAsset);
+    } catch (e) {
+        console.error("Failed to add asset:", e);
+        if (e instanceof Error && e.message.includes('QuotaExceeded')) {
+            alert("Database quota exceeded. File content might be too large.");
+        }
+    }
   };
 
-  const updateAssetStatus = (assetId: string, status: 'approved' | 'rejected') => {
-      setAssets(assets.map(a => a.id === assetId ? { ...a, status } : a));
+  const updateAssetStatus = async (assetId: string, status: 'approved' | 'rejected') => {
+      await updateDoc(doc(db, 'assets', assetId), { status });
   };
 
-  const deleteAsset = (assetId: string) => {
-      setAssets(assets.filter(a => a.id !== assetId));
+  const deleteAsset = async (assetId: string) => {
+      await deleteDoc(doc(db, 'assets', assetId));
   };
 
-  const updateAsset = (assetId: string, updates: Partial<Asset>) => {
-      setAssets(assets.map(a => a.id === assetId ? { ...a, ...updates, lastUpdatedDate: new Date().toISOString() } : a));
+  const updateAsset = async (assetId: string, updates: Partial<Asset>) => {
+      await updateDoc(doc(db, 'assets', assetId), { ...updates, lastUpdatedDate: new Date().toISOString() });
   };
 
   const markNotificationRead = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
-  const giveTokens = (userId: string, amount: number) => {
-      setUsers(users.map(u => u.id === userId ? { ...u, tokens: u.tokens + amount } : u));
-      if (user?.id === userId) setUser({ ...user, tokens: user.tokens + amount });
+  const giveTokens = async (userId: string, amount: number) => {
+      const targetUser = users.find(u => u.id === userId);
+      if (targetUser) {
+          await updateDoc(doc(db, 'users', userId), { tokens: targetUser.tokens + amount });
+      }
   };
 
-  const verifyUser = (userId: string) => {
-      setUsers(users.map(u => u.id === userId ? { ...u, isVerified: true } : u));
-      if (user?.id === userId) setUser({ ...user, isVerified: true });
+  const verifyUser = async (userId: string) => {
+      await updateDoc(doc(db, 'users', userId), { isVerified: true });
   }
 
   return (
@@ -253,3 +293,4 @@ export function useAppContext() {
   }
   return context;
 }
+
