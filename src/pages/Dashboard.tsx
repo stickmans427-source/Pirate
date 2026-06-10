@@ -6,12 +6,30 @@ import { formatTokens } from '../utils';
 import { Link } from 'react-router-dom';
 
 export function Dashboard() {
-  const { user, assets } = useAppContext();
+  const { user, assets, deleteAsset, updateAsset } = useAppContext();
   
   // Filter assets to only those owned by current user
   const myAssets = assets.filter(a => a.creatorId === user?.id);
 
   if (!user) return <div className="text-center py-20 text-white">Please log in to view dashboard.</div>;
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this asset?")) {
+      deleteAsset(id);
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    const newPrice = window.prompt("Enter new price in Tokens:");
+    if (newPrice) {
+      const priceNum = parseInt(newPrice);
+      if (!isNaN(priceNum) && priceNum >= 0) {
+        updateAsset(id, { price: priceNum });
+      } else {
+        alert("Invalid price.");
+      }
+    }
+  };
 
   const totalEarnings = MOCK_SALES_DATA.reduce((acc, curr) => acc + curr.earnings, 0);
   const totalSales = MOCK_SALES_DATA.reduce((acc, curr) => acc + curr.sales, 0);
@@ -123,10 +141,10 @@ export function Dashboard() {
                            <Link to={`/asset/${asset.id}`} className="p-2 bg-neutral-700 hover:bg-neutral-600 rounded-md text-neutral-300 transition-colors" title="View">
                               <Eye className="w-4 h-4" />
                            </Link>
-                           <button className="p-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 rounded-md text-indigo-400 transition-colors" title="Edit">
+                           <button onClick={() => handleEdit(asset.id)} className="p-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 rounded-md text-indigo-400 transition-colors" title="Edit Price">
                               <Edit className="w-4 h-4" />
                            </button>
-                           <button className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-md text-red-400 transition-colors" title="Delete">
+                           <button onClick={() => handleDelete(asset.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-md text-red-400 transition-colors" title="Delete">
                               <Trash2 className="w-4 h-4" />
                            </button>
                         </td>

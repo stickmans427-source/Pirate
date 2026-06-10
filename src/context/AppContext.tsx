@@ -16,6 +16,8 @@ interface AppContextType {
   purchaseAsset: (assetId: string) => boolean;
   addAsset: (asset: Asset) => void;
   updateAssetStatus: (assetId: string, status: 'approved' | 'rejected') => void;
+  deleteAsset: (assetId: string) => void;
+  updateAsset: (assetId: string, updates: Partial<Asset>) => void;
   markNotificationRead: (id: string) => void;
   toggleFavorite: (assetId: string) => void;
   giveTokens: (userId: string, amount: number) => void;
@@ -63,7 +65,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('pirate_assets', JSON.stringify(assets));
+    try {
+      localStorage.setItem('pirate_assets', JSON.stringify(assets));
+    } catch (e) {
+      console.error("Failed to save assets to local storage. File might be too large.", e);
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        alert("Warning: The uploaded file is too large for local browser storage. The app will keep it in memory, but it may be lost on reload.");
+      }
+    }
   }, [assets]);
 
   useEffect(() => {
@@ -204,6 +213,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setAssets(assets.map(a => a.id === assetId ? { ...a, status } : a));
   };
 
+  const deleteAsset = (assetId: string) => {
+      setAssets(assets.filter(a => a.id !== assetId));
+  };
+
+  const updateAsset = (assetId: string, updates: Partial<Asset>) => {
+      setAssets(assets.map(a => a.id === assetId ? { ...a, ...updates, lastUpdatedDate: new Date().toISOString() } : a));
+  };
+
   const markNotificationRead = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
@@ -222,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       user, assets, users, notifications,
       login, signup, logout, updateProfile, togglePremium, claimDailyReward, purchaseAsset, addAsset,
-      updateAssetStatus, markNotificationRead, giveTokens, verifyUser, toggleFavorite
+      updateAssetStatus, deleteAsset, updateAsset, markNotificationRead, giveTokens, verifyUser, toggleFavorite
     }}>
       {children}
     </AppContext.Provider>

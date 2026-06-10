@@ -63,6 +63,8 @@ export interface Asset {
   previewImages: string[];
   reviews: Review[];
   status: 'pending' | 'approved' | 'rejected';
+  fileData?: string;
+  fileName?: string;
 }
 
 export interface Notification {

@@ -39,36 +39,50 @@ export function UploadPage() {
       alert(`You have reached your daily upload limit of ${uploadLimit} assets.`);
       return;
     }
+    if (!selectedFile) {
+        alert("Please select a file to upload.");
+        return;
+    }
     
     setIsSubmitting(true);
     
-    // Simulate upload delay
-    setTimeout(() => {
-      const newAsset: Asset = {
-        id: `a${Date.now()}`,
-        name: formData.name,
-        description: formData.description,
-        creatorId: user.id,
-        creatorName: user.username,
-        uploadDate: new Date().toISOString(),
-        lastUpdatedDate: new Date().toISOString(),
-        category: formData.category as any,
-        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-        price: Number(formData.price),
-        downloadsCount: 0,
-        favoritesCount: 0,
-        rating: 0,
-        fileTypes: ['.rbxm', '.obj'],
-        previewImages: [formData.previewUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800'],
-        reviews: [],
-        status: 'pending' // Goes to pending for moderation
-      };
+    // Read the file content as a Data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const fileData = e.target?.result as string;
+        
+        // Simulate upload delay
+        setTimeout(() => {
+          const extName = selectedFile.name.substring(selectedFile.name.lastIndexOf('.'));
+          const newAsset: Asset = {
+            id: `a${Date.now()}`,
+            name: formData.name,
+            description: formData.description,
+            creatorId: user.id,
+            creatorName: user.username,
+            uploadDate: new Date().toISOString(),
+            lastUpdatedDate: new Date().toISOString(),
+            category: formData.category as any,
+            tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+            price: Number(formData.price),
+            downloadsCount: 0,
+            favoritesCount: 0,
+            rating: 0,
+            fileTypes: [extName as any],
+            previewImages: [formData.previewUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800'],
+            reviews: [],
+            status: 'pending', // Goes to pending for moderation
+            fileData: fileData,
+            fileName: selectedFile.name
+          };
 
-      addAsset(newAsset);
-      setIsSubmitting(false);
-      alert('Asset uploaded successfully and is pending review!');
-      navigate('/dashboard');
-    }, 1500);
+          addAsset(newAsset);
+          setIsSubmitting(false);
+          alert('Asset uploaded successfully and is pending review!');
+          navigate('/dashboard');
+        }, 1500);
+    };
+    reader.readAsDataURL(selectedFile);
   };
 
   if (!user) return <div className="text-center py-20 text-white">Please log in to upload assets.</div>;

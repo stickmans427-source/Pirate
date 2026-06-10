@@ -24,17 +24,28 @@ export function AssetDetails() {
     }
 
     if (isPurchased) {
-      const blob = new Blob([`Dummy content for ${asset.name}`], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const ext = asset.fileTypes && asset.fileTypes.length > 0 ? asset.fileTypes[0] : '.zip';
-      const cleanName = asset.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      a.download = `${cleanName}${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (asset.fileData) {
+        // If we have actual file data, initiate download
+        const a = document.createElement('a');
+        a.href = asset.fileData;
+        a.download = asset.fileName || `${asset.name}${asset.fileTypes[0] || '.zip'}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // Fallback for mock assets
+        const blob = new Blob([`Dummy content for ${asset.name}`], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = asset.fileTypes && asset.fileTypes.length > 0 ? asset.fileTypes[0] : '.zip';
+        const cleanName = asset.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        a.download = `${cleanName}${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } else {
       if (purchaseAsset(asset.id)) {
         alert(`Successfully purchased ${asset.name}! Tokens deducted.`);
@@ -197,7 +208,10 @@ export function AssetDetails() {
              </div>
 
              <div className="mt-8 space-y-2">
-                <button className="w-full flex items-center justify-center gap-2 text-xs text-neutral-400 hover:text-red-400 transition-colors py-2 border border-transparent hover:border-red-900 rounded bg-transparent hover:bg-red-950/30">
+                <button 
+                  onClick={() => alert("Thank you for your report. Our moderation team will review this asset shortly.")}
+                  className="w-full flex items-center justify-center gap-2 text-xs text-neutral-400 hover:text-red-400 transition-colors py-2 border border-transparent hover:border-red-900 rounded bg-transparent hover:bg-red-950/30"
+                >
                   <AlertTriangle className="w-3.5 h-3.5" /> Report Asset for DMCA/TOS Violation
                 </button>
              </div>
